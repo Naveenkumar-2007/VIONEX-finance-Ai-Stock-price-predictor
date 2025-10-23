@@ -438,7 +438,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Documentation**: See `docs/` folder
 - **Issues**: Open a GitHub issue
-- **Email**: support@vionexfinance.com
+- **Email**: naveenkumarchapala123@gmail.com
 
 ---
 
@@ -450,7 +450,7 @@ If you find this project useful, please give it a star! ⭐
 
 <div align="center">
 
-**Built with ❤️ by VIONEX Finance Team**
+**Built with ❤️ by VIONEX Finance**
 
 **Version 1.0.0 - Production Ready**
 
