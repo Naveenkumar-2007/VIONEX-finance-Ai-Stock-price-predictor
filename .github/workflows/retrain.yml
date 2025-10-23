@@ -1,0 +1,60 @@
+name: Model Retraining Schedule
+
+# Automatically retrain models with fresh data
+on:
+  schedule:
+    # Run every day at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  retrain:
+    name: Retrain All Models
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v3
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: 📦 Install Dependencies
+        run: |
+          pip install -r requirements.txt
+      
+      - name: 🤖 Run Training Pipeline
+        run: |
+          python mlops/training_pipeline.py
+      
+      - name: 📊 Generate Training Report
+        run: |
+          python -c "
+          import json
+          from datetime import datetime
+          
+          report = {
+              'timestamp': datetime.now().isoformat(),
+              'status': 'completed',
+              'models_trained': ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN']
+          }
+          
+          with open('training_report.json', 'w') as f:
+              json.dump(report, f, indent=2)
+          
+          print('Training Report:', json.dumps(report, indent=2))
+          "
+      
+      - name: 💾 Upload Training Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: training-report
+          path: training_report.json
+      
+      - name: 📧 Send Notification
+        if: failure()
+        run: |
+          echo "Training failed! Check logs."
+          # Add email/Slack notification here

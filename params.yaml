@@ -1,0 +1,51 @@
+# DVC Parameters
+# Configure pipeline parameters here
+
+# Data Ingestion parameters
+data_ingestion:
+  ticker: AAPL
+  period: 5y  # 5 years of historical data
+  tickers_list:
+    - AAPL
+    - GOOGL
+    - MSFT
+    - TSLA
+    - AMZN
+
+# Data Transformation parameters
+data_transformation:
+  sequence_length: 60  # Use 60 days for prediction
+  test_split: 0.2      # 20% test data
+  features:
+    - Close
+    - Volume
+    - SMA_20
+    - SMA_50
+    - RSI
+    - MACD
+
+# Model parameters
+model:
+  epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  lstm_units: [50, 50, 50]  # 3 LSTM layers with 50 units each
+  dropout_rate: 0.2
+  optimizer: adam
+  loss: mean_squared_error
+
+# Training parameters
+training:
+  validation_split: 0.2
+  early_stopping_patience: 10
+  reduce_lr_patience: 5
+  min_delta: 0.0001
+
+# Evaluation parameters
+evaluation:
+  metrics:
+    - mse
+    - rmse
+    - mae
+    - r2_score
+  prediction_days: 7
