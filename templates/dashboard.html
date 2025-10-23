@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Stock Trading Dashboard | AI Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-left">
+                <h1 class="logo">
+                    <img src="{{ url_for('static', filename='vionex-logo.png') }}" alt="VIONEX Finance Logo" class="logo-img">
+                    <span class="logo-text">AI Stock Predictor</span>
+                </h1>
+            </div>
+            <div class="header-right">
+                <span class="live-time" id="liveTime"></span>
+                <button class="theme-toggle" id="themeToggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main class="dashboard">
+        <div class="container">
+            <!-- Search Section -->
+            <div class="search-section">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input 
+                        type="text" 
+                        id="tickerInput" 
+                        placeholder="Enter stock symbol (e.g., AAPL, TSLA, GOOGL)" 
+                        value="AAPL"
+                    >
+                    <div class="days-selector">
+                        <label for="daysInput"><i class="fas fa-calendar-alt"></i> Predict:</label>
+                        <input 
+                            type="number" 
+                            id="daysInput" 
+                            min="1" 
+                            max="7" 
+                            value="1"
+                            class="days-input"
+                        >
+                        <span class="days-label">day(s)</span>
+                    </div>
+                    <button id="searchBtn" class="btn-primary">
+                        <i class="fas fa-brain"></i> Predict
+                    </button>
+                </div>
+                <div class="quick-stocks">
+                    <span class="label">Popular:</span>
+                    <button class="quick-btn" data-ticker="AAPL">AAPL</button>
+                    <button class="quick-btn" data-ticker="TSLA">TSLA</button>
+                    <button class="quick-btn" data-ticker="GOOGL">GOOGL</button>
+                    <button class="quick-btn" data-ticker="MSFT">MSFT</button>
+                    <button class="quick-btn" data-ticker="AMZN">AMZN</button>
+                    <span class="label ml-3">Quick Predict:</span>
+                    <button class="days-quick-btn" data-days="1">1 Day</button>
+                    <button class="days-quick-btn" data-days="3">3 Days</button>
+                    <button class="days-quick-btn" data-days="7">7 Days</button>
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="loading-spinner hidden">
+                <div class="spinner"></div>
+                <p>Analyzing stock data...</p>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="error-message hidden"></div>
+
+            <!-- Dashboard Content -->
+            <div id="dashboardContent" class="dashboard-content hidden">
+                <!-- Stock Info Header -->
+                <div class="stock-header">
+                    <div class="stock-title">
+                        <h2 id="companyName">Apple Inc.</h2>
+                        <span id="tickerSymbol" class="ticker-badge">AAPL</span>
+                    </div>
+                    <div class="last-updated">
+                        <i class="fas fa-clock"></i>
+                        <span id="lastUpdated"></span>
+                        <button id="refreshBtn" class="btn-refresh">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards Grid -->
+                <div class="stats-grid">
+                    <!-- Current Price Card -->
+                    <div class="stat-card">
+                        <div class="stat-icon current">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Current Price</div>
+                            <div class="stat-value" id="currentPrice">$0.00</div>
+                            <div class="stat-change" id="dayChange">
+                                <i class="fas fa-arrow-up"></i> $0.00 (0.00%)
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Predicted Price Card -->
+                    <div class="stat-card">
+                        <div class="stat-icon predicted">
+                            <i class="fas fa-crystal-ball"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Predicted Tomorrow</div>
+                            <div class="stat-value" id="predictedPrice">$0.00</div>
+                            <div class="stat-subtext">Next Day Forecast</div>
+                        </div>
+                    </div>
+
+                    <!-- Profit/Loss Card -->
+                    <div class="stat-card profit-loss-card">
+                        <div class="stat-icon" id="profitLossIcon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">
+                                Profit / Loss 
+                                <button onclick="clearAllTrades()" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:12px;margin-left:5px;" title="Reset all trades">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                            </div>
+                            <div class="stat-value profit-loss" id="profitLoss">$0.00</div>
+                            <div class="stat-badge" id="profitLossBadge">
+                                <i class="fas fa-info-circle"></i> Calculating...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Change Percentage Card -->
+                    <div class="stat-card">
+                        <div class="stat-icon percentage">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Expected Change</div>
+                            <div class="stat-value" id="changePercent">0.00%</div>
+                            <div class="stat-subtext">From Current Price</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-section">
+                    <!-- Main Chart -->
+                    <div class="chart-container main-chart">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-chart-area"></i> Price Prediction Chart</h3>
+                            <div class="chart-controls">
+                                <button class="chart-btn active" data-type="daily">30 Days</button>
+                                <button class="chart-btn" data-type="intraday">Today</button>
+                            </div>
+                        </div>
+                        <div class="chart-canvas">
+                            <canvas id="mainChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Additional Stats -->
+                    <div class="additional-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">
+                                <i class="fas fa-building"></i> Market Cap
+                            </div>
+                            <div class="stat-value" id="marketCap">N/A</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">
+                                <i class="fas fa-chart-bar"></i> Volume
+                            </div>
+                            <div class="stat-value" id="volume">N/A</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">
+                                <i class="fas fa-divide"></i> P/E Ratio
+                            </div>
+                            <div class="stat-value" id="peRatio">N/A</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trading Signal -->
+                <div class="trading-signal">
+                    <div class="signal-header">
+                        <i class="fas fa-signal"></i> AI Trading Signal
+                    </div>
+                    <div class="signal-content" id="tradingSignal">
+                        <div class="signal-badge">ANALYZING...</div>
+                        <p>Analyzing market conditions...</p>
+                    </div>
+                </div>
+
+                <!-- Multi-Day Predictions Table -->
+                <div class="predictions-table-container" id="predictionsTableContainer" style="display:none;">
+                    <div class="table-header">
+                        <h3><i class="fas fa-calendar-week"></i> <span id="predictionDaysTitle">7-Day</span> Price Predictions</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="predictions-table">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-hashtag"></i> Day</th>
+                                    <th><i class="fas fa-calendar"></i> Date</th>
+                                    <th><i class="fas fa-dollar-sign"></i> Predicted Price</th>
+                                    <th><i class="fas fa-chart-line"></i> Change</th>
+                                    <th><i class="fas fa-percentage"></i> Change %</th>
+                                    <th><i class="fas fa-signal"></i> Signal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="predictionsTableBody">
+                                <!-- Will be populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>
+            <i class="fas fa-shield-alt"></i> 
+            AI-Powered Predictions • Real-Time Data • Auto-Refresh Every 60s
+        </p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>

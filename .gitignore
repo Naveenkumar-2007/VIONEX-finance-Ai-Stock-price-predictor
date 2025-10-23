@@ -1,0 +1,210 @@
+# ================================
+# VIONEX Finance - Production .gitignore
+# ================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment Variables (CRITICAL - DO NOT COMMIT!)
+.env
+.env.local
+.env.production
+*.env
+
+# MLOps - Model Registry (keep structure, ignore large files)
+mlops/model_registry/*/model.h5
+mlops/model_registry/*/scaler.pkl
+mlops/logs/tensorboard/
+mlops/checkpoints/*.h5
+
+# Artifacts (regenerated, don't commit)
+artifacts/*.csv
+artifacts/*.npy
+artifacts/*.json
+artifacts/stock_lstm_model.h5
+
+# Keep directory structure
+!artifacts/.gitkeep
+!mlops/model_registry/.gitkeep
+!mlops/logs/.gitkeep
+!mlops/checkpoints/.gitkeep
+
+# MLflow
+mlruns/
+.mlflow/
+
+# Logs
+*.log
+logs/
+*.out
+
+# Testing
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# UV
+uv.lock
+
+# poetry
+poetry.lock
+.pdm.toml
+.pdm-python
+.pdm-build/
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+.idea/
+
+# Abstra
+.abstra/
+
+# Visual Studio Code
+.vscode/
+
+# Ruff stuff:
+.ruff_cache/
+
+# PyPI configuration file
+.pypirc
+
+# Cursor
+.cursorignore
+.cursorindexingignore
+
+# Additional
+mlruns/
+*.h5
+*.pkl

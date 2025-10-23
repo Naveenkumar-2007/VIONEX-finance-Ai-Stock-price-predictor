@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Stock Predictor - Real-Time Analytics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="light-mode">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-gradient-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="fas fa-chart-line"></i> AI Stock Predictor</a>
+            <div class="d-flex align-items-center">
+                <span class="text-white me-3" id="current-time"></span>
+                <button class="btn btn-outline-light btn-sm" id="theme-toggle">
+                    <i class="fas fa-moon"></i> Dark Mode
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-4">
+        <!-- Today's Info Card -->
+        {% if today_info %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card glass-card today-card">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h3 class="mb-0"><i class="fas fa-calendar-day text-primary"></i> Today's Live Data</h3>
+                                <p class="text-muted mb-0">{{ today_info.day_name }}, {{ today_info.date }}</p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <h2 class="mb-0 text-success"><strong>{{ today_info.ticker }}</strong></h2>
+                                <h4 class="mb-0" id="live-price">{{ today_info.price }}</h4>
+                                <small class="text-muted" id="live-change">Loading live data...</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="row">
+            <!-- Prediction Form -->
+            <div class="col-lg-4 mb-4">
+                <div class="card glass-card form-card">
+                    <div class="card-header bg-gradient-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-robot"></i> AI Prediction Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="mb-3">
+                                <label for="ticker" class="form-label">
+                                    <i class="fas fa-search"></i> Stock Ticker
+                                </label>
+                                <input type="text" 
+                                       class="form-control form-control-lg" 
+                                       id="ticker" 
+                                       name="ticker" 
+                                       required 
+                                       placeholder="e.g., AAPL, GOOGL, TSLA"
+                                       value="{{ today_info.ticker if today_info else '' }}">
+                                <small class="form-text text-muted">Enter stock symbol</small>
+                            </div>
+                            <div class="mb-4">
+                                <label for="days_ahead" class="form-label">
+                                    <i class="fas fa-calendar-plus"></i> Prediction Period
+                                </label>
+                                <input type="range" 
+                                       class="form-range" 
+                                       id="days_ahead" 
+                                       name="days_ahead" 
+                                       min="1" 
+                                       max="7" 
+                                       value="7" 
+                                       oninput="document.getElementById('days_value').textContent = this.value">
+                                <div class="d-flex justify-content-between">
+                                    <small>1 Day</small>
+                                    <strong><span id="days_value">7</span> Days</strong>
+                                    <small>7 Days</small>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-lg btn-gradient-success w-100 pulse-btn">
+                                <i class="fas fa-brain"></i> Predict Future Prices
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Info Card -->
+                <div class="card glass-card mt-3">
+                    <div class="card-body">
+                        <h6 class="text-primary"><i class="fas fa-info-circle"></i> Features</h6>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check text-success"></i> Real-time data updates</li>
+                            <li><i class="fas fa-check text-success"></i> 7-day price predictions</li>
+                            <li><i class="fas fa-check text-success"></i> AI-powered analysis</li>
+                            <li><i class="fas fa-check text-success"></i> Interactive charts</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="col-lg-8">
+                {% if prediction_data %}
+                <!-- Price Chart -->
+                <div class="card glass-card mb-4">
+                    <div class="card-header bg-gradient-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-area"></i> Price Prediction Chart</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Predictions Table -->
+                <div class="card glass-card">
+                    <div class="card-header bg-gradient-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-list-alt"></i> 7-Day Predictions</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 prediction-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th><i class="fas fa-calendar"></i> Day</th>
+                                        <th><i class="fas fa-calendar-day"></i> Date</th>
+                                        <th><i class="fas fa-dollar-sign"></i> Predicted Price</th>
+                                        <th><i class="fas fa-arrow-up"></i> Change</th>
+                                        <th><i class="fas fa-percentage"></i> Change %</th>
+                                        <th><i class="fas fa-chart-line"></i> Trend</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for pred in prediction_data %}
+                                    <tr class="prediction-row">
+                                        <td><strong>Day {{ pred.day }}</strong></td>
+                                        <td>
+                                            <div class="date-cell">
+                                                {{ pred.date }}<br>
+                                                <small class="text-muted">{{ pred.day_name }}</small>
+                                            </div>
+                                        </td>
+                                        <td><strong class="price-value">{{ pred.price }}</strong></td>
+                                        <td class="{% if pred.trend == 'up' %}text-success{% else %}text-danger{% endif %}">
+                                            <strong>{{ pred.change }}</strong>
+                                        </td>
+                                        <td class="{% if pred.trend == 'up' %}text-success{% else %}text-danger{% endif %}">
+                                            <strong>{{ pred.change_percent }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if pred.trend == 'up' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-arrow-up"></i> Bullish
+                                            </span>
+                                            {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-arrow-down"></i> Bearish
+                                            </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Welcome Message -->
+                <div class="card glass-card">
+                    <div class="card-body text-center p-5">
+                        <i class="fas fa-chart-line fa-5x text-primary mb-4"></i>
+                        <h3 class="text-gradient">Welcome to AI Stock Predictor</h3>
+                        <p class="lead">Enter a stock ticker and select prediction period to get started</p>
+                        <p class="text-muted">Our AI model analyzes historical data, technical indicators, and market trends to predict future prices</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer mt-5 py-3">
+        <div class="container text-center">
+            <span class="text-muted">© 2025 AI Stock Predictor | Powered by Deep Learning & Real-Time Data</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Live Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            document.body.classList.toggle('light-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i> Light Mode' : '<i class="fas fa-moon"></i> Dark Mode';
+        });
+
+        {% if today_info and chart_data %}
+        // Live Price Updates
+        function updateLivePrice() {
+            fetch('/get_live_data/{{ today_info.ticker }}')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) {
+                        document.getElementById('live-price').textContent = '$' + data.price.toFixed(2);
+                        const changeEl = document.getElementById('live-change');
+                        const changeClass = data.change >= 0 ? 'text-success' : 'text-danger';
+                        const arrow = data.change >= 0 ? '↑' : '↓';
+                        changeEl.className = changeClass;
+                        changeEl.textContent = arrow + ' $' + Math.abs(data.change).toFixed(2) + ' (' + data.change_percent.toFixed(2) + '%)';
+                    }
+                })
+                .catch(err => console.error('Error fetching live data:', err));
+        }
+        
+        // Update every 60 seconds
+        setInterval(updateLivePrice, 60000);
+        updateLivePrice();
+
+        // Chart
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        const gradient1 = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient1.addColorStop(0, 'rgba(54, 162, 235, 0.4)');
+        gradient1.addColorStop(1, 'rgba(54, 162, 235, 0.0)');
+        
+        const gradient2 = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient2.addColorStop(0, 'rgba(75, 192, 192, 0.4)');
+        gradient2.addColorStop(1, 'rgba(75, 192, 192, 0.0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ chart_data.historical_dates | tojson }} + {{ chart_data.future_dates | tojson }},
+                datasets: [{
+                    label: 'Historical Prices',
+                    data: {{ chart_data.historical_prices | tojson }} + Array({{ chart_data.future_dates | length }}).fill(null),
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: gradient1,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }, {
+                    label: 'Predicted Prices',
+                    data: Array({{ chart_data.historical_dates | length }}).fill(null) + [{{ chart_data.current_price }}] + {{ chart_data.predicted_prices | tojson }},
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: gradient2,
+                    borderWidth: 3,
+                    borderDash: [5, 5],
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointStyle: 'rectRot'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: { size: 12, weight: 'bold' }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        padding: 12,
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 13 },
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) { return '$' + value.toFixed(0); },
+                            font: { size: 11 }
+                        },
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        ticks: { font: { size: 10 } },
+                        grid: { display: false }
+                    }
+                },
+                animation: { duration: 2000, easing: 'easeInOutQuart' }
+            }
+        });
+        {% endif %}
+    </script>
+</body>
+</html>
