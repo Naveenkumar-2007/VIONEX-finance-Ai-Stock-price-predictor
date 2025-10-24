@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1"></script>
 </head>
 <body>
     <!-- Header -->
@@ -158,17 +161,55 @@
 
                 <!-- Charts Section -->
                 <div class="charts-section">
+                    <!-- Chart Tabs -->
+                    <div class="chart-tabs">
+                        <button class="chart-tab active" data-period="30">
+                            <i class="fas fa-calendar-alt"></i> 30 Days
+                        </button>
+                        <button class="chart-tab" data-period="7">
+                            <i class="fas fa-calendar-week"></i> 7 Days
+                        </button>
+                        <button class="chart-tab" data-period="today">
+                            <i class="fas fa-clock"></i> Today
+                        </button>
+                    </div>
+
                     <!-- Main Chart -->
                     <div class="chart-container main-chart">
                         <div class="chart-header">
-                            <h3><i class="fas fa-chart-area"></i> Price Prediction Chart</h3>
-                            <div class="chart-controls">
-                                <button class="chart-btn active" data-type="daily">30 Days</button>
-                                <button class="chart-btn" data-type="intraday">Today</button>
+                            <h3>
+                                <i class="fas fa-chart-line"></i> 
+                                <span id="chartTitle">Price Chart</span>
+                            </h3>
+                            <div class="chart-type-toggle">
+                                <button class="chart-type-btn active" data-chart-type="line">
+                                    <i class="fas fa-chart-line"></i> Line
+                                </button>
+                                <button class="chart-type-btn" data-chart-type="candlestick">
+                                    <i class="fas fa-chart-candlestick"></i> Candlestick
+                                </button>
                             </div>
                         </div>
-                        <div class="chart-canvas">
-                            <canvas id="mainChart"></canvas>
+                        <div class="chart-canvas-wrapper">
+                            <div id="chartPlaceholder" class="chart-placeholder">
+                                <div class="placeholder-content">
+                                    <i class="fas fa-chart-area fa-3x"></i>
+                                    <p>Select a time period to view the chart</p>
+                                    <div class="placeholder-actions">
+                                        <button class="placeholder-btn" onclick="loadChart('30')">
+                                            <i class="fas fa-calendar-alt"></i> Load 30 Days
+                                        </button>
+                                        <button class="placeholder-btn" onclick="loadChart('today')">
+                                            <i class="fas fa-clock"></i> Load Today
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <canvas id="mainChart" class="hidden"></canvas>
+                            <div id="chartLoading" class="chart-loading hidden">
+                                <div class="spinner-small"></div>
+                                <p>Loading chart data...</p>
+                            </div>
                         </div>
                     </div>
 
