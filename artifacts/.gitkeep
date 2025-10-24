@@ -1,0 +1,2 @@
+# This file ensures the artifacts directory is preserved in git
+# Azure App Service needs this directory to exist for model storage

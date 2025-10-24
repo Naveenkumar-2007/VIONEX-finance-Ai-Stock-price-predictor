@@ -1,1 +1,1 @@
-python -m pip install --no-cache-dir -r requirements.txt && python -m gunicorn app:app --bind=0.0.0.0:8000 --timeout 600 --workers 4 --access-logfile - --error-logfile -
+cd /home/site/wwwroot && pip install --no-cache-dir -r requirements.txt && gunicorn wsgi:app --bind=0.0.0.0:8000 --timeout 600 --workers 2 --access-logfile - --error-logfile - --log-level debug
