@@ -1,9 +1,13 @@
-import yfinance as yf
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import ta
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
+import sys
+
+# Add parent directory to path to import stock_api
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+from stock_api import get_stock_history
 
 class DataIngestion:
     def __init__(self, ticker='AAPL', start_date='2020-01-01', end_date=None):
@@ -13,10 +17,20 @@ class DataIngestion:
         self.end_date = end_date if end_date else datetime.now().strftime('%Y-%m-%d')
         
     def fetch_data(self):
-        data = yf.download(self.ticker, start=self.start_date, end=self.end_date, auto_adjust=False)
-        # Handle multiindex columns if ticker is a list
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns = data.columns.droplevel(1)  # Drop ticker level, keep 'Open', 'High', etc.
+        """Fetch stock data using Twelve Data API"""
+        # Calculate number of days to fetch
+        start = datetime.strptime(self.start_date, '%Y-%m-%d')
+        end = datetime.strptime(self.end_date, '%Y-%m-%d')
+        days = (end - start).days
+        
+        print(f"📊 Fetching {self.ticker} data from {self.start_date} to {self.end_date} ({days} days)")
+        
+        # Twelve Data API - fetch with appropriate interval
+        data = get_stock_history(self.ticker, days=min(days, 5000))  # API limit: 5000 points
+        
+        if data.empty:
+            raise ValueError(f"No data fetched for {self.ticker}")
+        
         return data
     
     def preprocess(self, data):

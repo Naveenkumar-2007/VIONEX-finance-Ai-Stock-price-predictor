@@ -73,7 +73,7 @@ def get_stock_data(ticker):
                 'error': f'No data found for {ticker}. Please check the ticker symbol or try again later.'
             }), 404
         
-        # Handle multi-index columns (sometimes yf.download returns MultiIndex)
+        # Handle multi-index columns if needed
         if isinstance(hist.columns, pd.MultiIndex):
             print(f"  Flattening MultiIndex columns...")
             hist.columns = hist.columns.get_level_values(0)
@@ -375,17 +375,10 @@ def predict_stock_old():
         ticker = request.form.get('ticker').upper()
         days_ahead = int(request.form.get('days_ahead', 7))
         
-        # Fetch daily data using Yahoo Finance (last 100 days)
+        # Fetch daily data using Twelve Data API (last 180 days / 6 months)
         try:
-            # Download stock data
-            stock = yf.Ticker(ticker)
-            daily_data = yf.download(ticker, period='6mo', interval='1d', auto_adjust=False)
-            
-            # Handle MultiIndex columns if present
-            if isinstance(daily_data.columns, pd.MultiIndex):
-                daily_data.columns = daily_data.columns.droplevel(1)
-            
-            daily_data.index = pd.to_datetime(daily_data.index)
+            # Fetch stock data using Twelve Data API
+            daily_data = get_stock_history(ticker, days=180)
             
             if daily_data.empty:
                 return render_template('home.html', results=f"No data found for ticker: {ticker}. Please check the ticker symbol.", chart_data=None)

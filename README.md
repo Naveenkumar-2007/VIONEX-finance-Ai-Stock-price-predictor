@@ -23,7 +23,7 @@ VIONEX Finance is a production-ready stock prediction system that uses LSTM neur
 ### ✨ Key Features
 
 - 📈 **Multi-Day Predictions** - Forecast 1-7 days ahead with LSTM
-- 🔄 **Real-Time Data** - Live stock data via yfinance API
+- 🔄 **Real-Time Data** - Live stock data via Twelve Data API
 - 📊 **Technical Analysis** - RSI, MACD, Bollinger Bands
 - 🤖 **MLOps System** - Automated training, versioning, registry
 - 🎨 **Professional UI** - TradingView-inspired dashboard
@@ -139,7 +139,7 @@ vionex-finance/
 ### Backend
 - **Flask 3.0** - Web framework
 - **TensorFlow 2.15** - LSTM neural networks
-- **yfinance** - Real-time stock data
+- **Twelve Data API** - Real-time stock data (800 requests/day free)
 - **scikit-learn** - Data preprocessing
 - **pandas/numpy** - Data manipulation
 
@@ -426,7 +426,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **yfinance** - Real-time stock data
+- **Twelve Data API** - Real-time stock data (Cloud-friendly)
 - **TensorFlow** - Machine learning framework
 - **Chart.js** - Interactive charts
 - **Flask** - Web framework
