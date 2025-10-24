@@ -19,11 +19,11 @@ def evaluate_model():
     
     # Load model and data
     model = load_model('artifacts/stock_lstm_model.h5')
-    test_data = np.load('artifacts/test_data.npy', allow_pickle=True)
+    test_data = np.load('artifacts/processed_test.npy', allow_pickle=True).item()
     
     # Split features and labels
-    X_test = test_data.item()['X_test']
-    y_test = test_data.item()['y_test']
+    X_test = test_data['X']
+    y_test = test_data['y']
     
     print(f"Test data shape: X={X_test.shape}, y={y_test.shape}")
     

@@ -1,51 +1,46 @@
-# DVC Pipeline Configuration
-# This file defines the machine learning pipeline stages
-# Run with: dvc repro
 
 stages:
   # Stage 1: Data Ingestion
   data_ingestion:
-    cmd: python -c "from src.components.data_ingestion import DataIngestion; di = DataIngestion(); di.initiate_data_ingestion('AAPL')"
+    cmd: python -c "from src.components.data_ingestion import DataIngestion; di = DataIngestion(); di.initiate_data_ingestion()"
     deps:
       - src/components/data_ingestion.py
     params:
       - data_ingestion.ticker
       - data_ingestion.period
     outs:
-      - artifacts/raw_data.csv:
+      - artifacts/raw_stock_data.csv:
           cache: true
           persist: false
-    metrics:
-      - artifacts/data_metrics.json:
-          cache: false
+      - artifacts/train_stock_data.csv:
+          cache: true
+      - artifacts/test_stock_data.csv:
+          cache: true
 
   # Stage 2: Data Transformation
   data_transformation:
-    cmd: python -c "from src.components.data_transformation import DataTransformation; dt = DataTransformation(); dt.initiate_data_transformation('artifacts/raw_data.csv')"
+    cmd: python -m src.components.data_transformation
     deps:
       - src/components/data_transformation.py
-      - artifacts/raw_data.csv
+      - artifacts/raw_stock_data.csv
     params:
       - data_transformation.sequence_length
       - data_transformation.test_split
     outs:
-      - artifacts/train_data.npy:
+      - artifacts/processed_train.npy:
           cache: true
-      - artifacts/test_data.npy:
+      - artifacts/processed_test.npy:
           cache: true
       - artifacts/scaler.pkl:
           cache: true
-    metrics:
-      - artifacts/transformation_metrics.json:
-          cache: false
 
   # Stage 3: Model Training
-  model_training:
-    cmd: python -c "from src.components.model_trainer import ModelTrainer; mt = ModelTrainer(); mt.initiate_model_training()"
+  model_trainer:
+    cmd: python -m src.components.model_trainer
     deps:
       - src/components/model_trainer.py
-      - artifacts/train_data.npy
-      - artifacts/test_data.npy
+      - artifacts/processed_train.npy
+      - artifacts/processed_test.npy
     params:
       - model.epochs
       - model.batch_size
@@ -54,35 +49,26 @@ stages:
     outs:
       - artifacts/stock_lstm_model.h5:
           cache: true
-      - mlops/checkpoints/:
-          cache: true
-    plots:
-      - artifacts/training_history.csv:
-          x: epoch
-          y:
-            - loss
-            - val_loss
-    metrics:
-      - artifacts/model_metrics.json:
-          cache: false
 
   # Stage 4: Model Evaluation
   model_evaluation:
-    cmd: python mlops/evaluate_model.py
+    cmd: python -m mlops.evaluate_model
     deps:
       - mlops/evaluate_model.py
       - artifacts/stock_lstm_model.h5
-      - artifacts/test_data.npy
+      - artifacts/processed_test.npy
       - artifacts/scaler.pkl
-    metrics:
+    outs:
       - artifacts/evaluation_metrics.json:
           cache: false
-    plots:
-      - artifacts/predictions_plot.png
+      - artifacts/predictions_plot.png:
+          cache: false
+      - artifacts/error_distribution.png:
+          cache: false
 
   # Stage 5: Model Registration
   model_registration:
-    cmd: python -c "from mlops.registry import ModelRegistry; mr = ModelRegistry(); mr.register_best_model()"
+    cmd: python -m mlops.registry
     deps:
       - mlops/registry.py
       - artifacts/stock_lstm_model.h5

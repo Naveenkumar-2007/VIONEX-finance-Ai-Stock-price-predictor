@@ -1,0 +1,27 @@
+cmd: python -m src.components.data_transformation
+deps:
+- path: artifacts/raw_stock_data.csv
+  hash: md5
+  md5: 1d67c1de208bca8070ee37d50d6d74b9
+  size: 144732
+- path: src/components/data_transformation.py
+  hash: md5
+  md5: 5cc9f38a0b62bd74df77f0cf140b9363
+  size: 1471
+params:
+  params.yaml:
+    data_transformation.sequence_length: 60
+    data_transformation.test_split: 0.2
+outs:
+- path: artifacts/processed_test.npy
+  hash: md5
+  md5: ecb449f1e5e0f8f787926d8108a7890f
+  size: 644451
+- path: artifacts/processed_train.npy
+  hash: md5
+  md5: 0a6e9258189acf721610f6347d78b4e3
+  size: 3087701
+- path: artifacts/scaler.pkl
+  hash: md5
+  md5: 452c4dac240e54c53ffe6464ae974c76
+  size: 903
