@@ -5,32 +5,43 @@ import os
 from datetime import datetime, timedelta
 import ta
 import numpy as np
-from tensorflow.keras.models import load_model
-from sklearn.preprocessing import MinMaxScaler
 import warnings
 warnings.filterwarnings('ignore')
 
 application = Flask(__name__)
 app = application
 
-# Load pre-trained LSTM model
+# Model will be loaded lazily on first use
 MODEL_PATH = 'artifacts/stock_lstm_model.h5'
 model = None
+model_loading_attempted = False
 
 def load_lstm_model():
-    """Load the pre-trained LSTM model"""
-    global model
+    """Load the pre-trained LSTM model (lazy loading)"""
+    global model, model_loading_attempted
+    
+    if model_loading_attempted:
+        return model
+        
+    model_loading_attempted = True
+    
     try:
         if os.path.exists(MODEL_PATH):
+            print(f"📦 Loading TensorFlow model from {MODEL_PATH}...")
+            # Import TensorFlow only when needed
+            from tensorflow.keras.models import load_model
             model = load_model(MODEL_PATH)
-            print(f"✓ Model loaded from {MODEL_PATH}")
+            print(f"✓ Model loaded successfully from {MODEL_PATH}")
         else:
             print(f"⚠ Model file not found at {MODEL_PATH}")
+            print(f"   Current directory: {os.getcwd()}")
+            print(f"   Files in artifacts/: {os.listdir('artifacts/') if os.path.exists('artifacts/') else 'Directory not found'}")
     except Exception as e:
-        print(f"Error loading model: {e}")
-
-# Load model on startup
-load_lstm_model()
+        print(f"❌ Error loading model: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    return model
 
 @app.route('/')
 def index():
@@ -219,13 +230,19 @@ def predict_multi_day_lstm(hist, current_price, days):
     predictions = []
     
     try:
-        if model is None:
+        # Load model if not already loaded
+        current_model = load_lstm_model()
+        
+        if current_model is None:
             # Fallback: Use technical analysis for each day
             for day in range(days):
                 pred = predict_with_technical_analysis(hist, current_price)
                 predictions.append(pred)
                 current_price = pred  # Use prediction as next base
             return predictions
+        
+        # Import sklearn when needed
+        from sklearn.preprocessing import MinMaxScaler
         
         # Prepare data for LSTM
         close_prices = hist['Close'].values.reshape(-1, 1)
@@ -247,7 +264,7 @@ def predict_multi_day_lstm(hist, current_price, days):
             input_seq = np.array(last_sequence[-sequence_length:]).reshape(1, sequence_length, 1)
             
             # Make prediction
-            predicted_scaled = model.predict(input_seq, verbose=0)[0][0]
+            predicted_scaled = current_model.predict(input_seq, verbose=0)[0][0]
             
             # Add prediction to sequence for next iteration
             last_sequence.append([predicted_scaled])
@@ -270,9 +287,15 @@ def predict_multi_day_lstm(hist, current_price, days):
 def predict_next_day_lstm(hist, current_price):
     """Predict next day price using LSTM model"""
     try:
-        if model is None:
+        # Load model if not already loaded
+        current_model = load_lstm_model()
+        
+        if current_model is None:
             # Fallback: Use technical analysis if model not available
             return predict_with_technical_analysis(hist, current_price)
+        
+        # Import sklearn when needed
+        from sklearn.preprocessing import MinMaxScaler
         
         # Prepare data for LSTM
         close_prices = hist['Close'].values.reshape(-1, 1)
@@ -290,7 +313,7 @@ def predict_next_day_lstm(hist, current_price):
         last_sequence = last_sequence.reshape(1, sequence_length, 1)
         
         # Make prediction
-        predicted_scaled = model.predict(last_sequence, verbose=0)
+        predicted_scaled = current_model.predict(last_sequence, verbose=0)
         predicted_price = scaler.inverse_transform(predicted_scaled)[0][0]
         
         return float(predicted_price)

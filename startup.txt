@@ -1,1 +1,1 @@
-bash .azure/startup.sh
+gunicorn wsgi:app --bind=0.0.0.0:8000 --timeout 600 --workers 1 --worker-class sync --preload --log-level info
