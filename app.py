@@ -56,30 +56,63 @@ def get_stock_data(ticker):
     try:
         ticker = ticker.upper()
         
-        # Fetch live stock data using Ticker object (more reliable)
-        stock = yf.Ticker(ticker)
+        print(f"🔍 Fetching data for {ticker}...")
         
-        # Try to get historical data
-        hist = stock.history(period='60d')
+        # Try multiple methods to fetch stock data
+        hist = pd.DataFrame()
         
-        # If that fails, try download method
+        # Method 1: Use Ticker object with period
+        try:
+            stock = yf.Ticker(ticker)
+            hist = stock.history(period='60d')
+            print(f"  Method 1 (Ticker.history): {len(hist)} rows")
+        except Exception as e:
+            print(f"  Method 1 failed: {e}")
+        
+        # Method 2: Try with start/end dates if period fails
         if hist.empty:
-            hist = yf.download(ticker, period='60d', interval='1d', auto_adjust=False, progress=False)
-            if isinstance(hist.columns, pd.MultiIndex):
-                hist.columns = hist.columns.droplevel(1)
+            try:
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=60)
+                hist = stock.history(start=start_date, end=end_date)
+                print(f"  Method 2 (Ticker with dates): {len(hist)} rows")
+            except Exception as e:
+                print(f"  Method 2 failed: {e}")
         
+        # Method 3: Use download method with progress=False
+        if hist.empty:
+            try:
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=60)
+                hist = yf.download(ticker, start=start_date, end=end_date, progress=False, ignore_tz=True)
+                if isinstance(hist.columns, pd.MultiIndex):
+                    hist.columns = hist.columns.droplevel(1)
+                print(f"  Method 3 (download): {len(hist)} rows")
+            except Exception as e:
+                print(f"  Method 3 failed: {e}")
+        
+        # Validate data
         if hist.empty or len(hist) < 2:
+            print(f"❌ No data found for {ticker} after trying all methods")
             return jsonify({
                 'success': False,
-                'error': f'No data found for {ticker}. Please check the ticker symbol.'
+                'error': f'No data found for {ticker}. Please check the ticker symbol or try again later.'
             }), 404
+        
+        # Handle multi-index columns (sometimes yf.download returns MultiIndex)
+        if isinstance(hist.columns, pd.MultiIndex):
+            print(f"  Flattening MultiIndex columns...")
+            hist.columns = hist.columns.get_level_values(0)
         
         # Ensure we have Close column
         if 'Close' not in hist.columns:
+            print(f"❌ Invalid columns: {list(hist.columns)}")
             return jsonify({
                 'success': False,
                 'error': f'Invalid data structure for {ticker}. Columns: {list(hist.columns)}'
             }), 500
+        
+        print(f"✓ Data validated: {len(hist)} rows, columns: {list(hist.columns)}")
         
         # Current price
         current_price = float(hist['Close'].iloc[-1])
@@ -141,15 +174,25 @@ def get_stock_data(ticker):
         tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
         
         # Get intraday data for live chart (today)
+        intraday = pd.DataFrame()
         try:
-            # Use Ticker object method for intraday data
+            # Method 1: Try Ticker.history with 1d period
             intraday = stock.history(period='1d', interval='5m')
+            print(f"  Intraday Method 1: {len(intraday)} data points")
             
-            # If empty, try download method
+            # Method 2: If empty, try with explicit dates
             if intraday.empty:
-                intraday = yf.download(ticker, period='1d', interval='5m', auto_adjust=False, progress=False)
+                today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+                today_end = datetime.now()
+                intraday = stock.history(start=today_start, end=today_end, interval='5m')
+                print(f"  Intraday Method 2: {len(intraday)} data points")
+            
+            # Method 3: Try download if still empty
+            if intraday.empty:
+                intraday = yf.download(ticker, period='1d', interval='5m', progress=False, ignore_tz=True)
                 if isinstance(intraday.columns, pd.MultiIndex):
                     intraday.columns = intraday.columns.droplevel(1)
+                print(f"  Intraday Method 3: {len(intraday)} data points")
             
             if not intraday.empty and len(intraday) > 0:
                 intraday_times = [t.strftime('%H:%M') for t in intraday.index]
