@@ -1,6 +1,5 @@
 from flask import Flask, request, render_template, jsonify
 import pandas as pd
-import yfinance as yf
 import os
 from datetime import datetime, timedelta
 import ta
@@ -8,9 +7,12 @@ import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
 
-# Configure yfinance to avoid being blocked by Yahoo Finance
-# Let yfinance handle session management automatically
-# Yahoo Finance API now uses cloudflare protection, yfinance handles this internally
+# Import our custom stock API using Twelve Data
+from stock_api import get_stock_history, get_intraday_data
+
+print("="*60)
+print("🚀 Stock Predictor App - Using Twelve Data API")
+print("="*60)
 
 application = Flask(__name__)
 app = application
@@ -60,47 +62,12 @@ def get_stock_data(ticker):
     try:
         ticker = ticker.upper()
         
-        print(f"🔍 Fetching data for {ticker}...")
-        
-        # Try multiple methods to fetch stock data
-        # yfinance automatically handles cloudflare protection
-        hist = pd.DataFrame()
-        
-        # Method 1: Use Ticker object with period
-        try:
-            stock = yf.Ticker(ticker)
-            hist = stock.history(period='60d')
-            print(f"  Method 1 (Ticker.history): {len(hist)} rows")
-        except Exception as e:
-            print(f"  Method 1 failed: {e}")
-        
-        # Method 2: Try with start/end dates if period fails
-        if hist.empty:
-            try:
-                end_date = datetime.now()
-                start_date = end_date - timedelta(days=60)
-                stock = yf.Ticker(ticker)
-                hist = stock.history(start=start_date, end=end_date)
-                print(f"  Method 2 (Ticker with dates): {len(hist)} rows")
-            except Exception as e:
-                print(f"  Method 2 failed: {e}")
-        
-        # Method 3: Try with different period
-        if hist.empty:
-            try:
-                end_date = datetime.now()
-                start_date = end_date - timedelta(days=60)
-                stock_alt = yf.Ticker(ticker)
-                hist = stock_alt.history(start=start_date, end=end_date, interval='1d')
-                if isinstance(hist.columns, pd.MultiIndex):
-                    hist.columns = hist.columns.droplevel(1)
-                print(f"  Method 3 (Ticker with interval): {len(hist)} rows")
-            except Exception as e:
-                print(f"  Method 3 failed: {e}")
+        # Fetch stock data using Twelve Data API (cloud-friendly, no blocking)
+        hist = get_stock_history(ticker, days=60)
         
         # Validate data
         if hist.empty or len(hist) < 2:
-            print(f"❌ No data found for {ticker} after trying all methods")
+            print(f"❌ No data found for {ticker}")
             return jsonify({
                 'success': False,
                 'error': f'No data found for {ticker}. Please check the ticker symbol or try again later.'
@@ -183,23 +150,8 @@ def get_stock_data(ticker):
         # Get intraday data for live chart (today)
         intraday = pd.DataFrame()
         try:
-            # Method 1: Try Ticker.history with 1d period
-            intraday = stock.history(period='1d', interval='5m')
-            print(f"  Intraday Method 1: {len(intraday)} data points")
-            
-            # Method 2: If empty, try with explicit dates
-            if intraday.empty:
-                today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-                today_end = datetime.now()
-                intraday = stock.history(start=today_start, end=today_end, interval='5m')
-                print(f"  Intraday Method 2: {len(intraday)} data points")
-            
-            # Method 3: Try download if still empty
-            if intraday.empty:
-                intraday = yf.download(ticker, period='1d', interval='5m', progress=False, ignore_tz=True)
-                if isinstance(intraday.columns, pd.MultiIndex):
-                    intraday.columns = intraday.columns.droplevel(1)
-                print(f"  Intraday Method 3: {len(intraday)} data points")
+            # Fetch intraday data using Twelve Data API
+            intraday = get_intraday_data(ticker, interval='5min', outputsize=78)
             
             if not intraday.empty and len(intraday) > 0:
                 intraday_times = [t.strftime('%H:%M') for t in intraday.index]
@@ -214,17 +166,10 @@ def get_stock_data(ticker):
             intraday_times = [d.strftime('%m/%d') for d in hist.index[-10:]]
             intraday_prices = hist['Close'].tail(10).tolist()
         
-        # Stock info with error handling
-        try:
-            info = stock.info
-            company_name = info.get('longName', info.get('shortName', ticker))
-            market_cap = info.get('marketCap', 'N/A')
-            pe_ratio = info.get('trailingPE', info.get('forwardPE', 'N/A'))
-        except Exception as e:
-            print(f"Info fetch error: {e}")
-            company_name = ticker
-            market_cap = 'N/A'
-            pe_ratio = 'N/A'
+        # Stock info (Twelve Data doesn't provide detailed info, use ticker name)
+        company_name = ticker
+        market_cap = 'N/A'
+        pe_ratio = 'N/A'
         
         volume = int(hist['Volume'].iloc[-1]) if 'Volume' in hist.columns else 0
         
