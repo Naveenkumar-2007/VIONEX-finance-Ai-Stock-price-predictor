@@ -8,6 +8,10 @@ import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
 
+# Configure yfinance to avoid being blocked by Yahoo Finance
+# Let yfinance handle session management automatically
+# Yahoo Finance API now uses cloudflare protection, yfinance handles this internally
+
 application = Flask(__name__)
 app = application
 
@@ -59,6 +63,7 @@ def get_stock_data(ticker):
         print(f"🔍 Fetching data for {ticker}...")
         
         # Try multiple methods to fetch stock data
+        # yfinance automatically handles cloudflare protection
         hist = pd.DataFrame()
         
         # Method 1: Use Ticker object with period
@@ -74,20 +79,22 @@ def get_stock_data(ticker):
             try:
                 end_date = datetime.now()
                 start_date = end_date - timedelta(days=60)
+                stock = yf.Ticker(ticker)
                 hist = stock.history(start=start_date, end=end_date)
                 print(f"  Method 2 (Ticker with dates): {len(hist)} rows")
             except Exception as e:
                 print(f"  Method 2 failed: {e}")
         
-        # Method 3: Use download method with progress=False
+        # Method 3: Try with different period
         if hist.empty:
             try:
                 end_date = datetime.now()
                 start_date = end_date - timedelta(days=60)
-                hist = yf.download(ticker, start=start_date, end=end_date, progress=False, ignore_tz=True)
+                stock_alt = yf.Ticker(ticker)
+                hist = stock_alt.history(start=start_date, end=end_date, interval='1d')
                 if isinstance(hist.columns, pd.MultiIndex):
                     hist.columns = hist.columns.droplevel(1)
-                print(f"  Method 3 (download): {len(hist)} rows")
+                print(f"  Method 3 (Ticker with interval): {len(hist)} rows")
             except Exception as e:
                 print(f"  Method 3 failed: {e}")
         
