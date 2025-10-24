@@ -1,18 +1,14 @@
-# Core Dependencies
 Flask==3.0.0
 gunicorn==21.2.0
-# Data Processing
 numpy==1.24.3
 pandas==2.1.4
 scikit-learn==1.6.1
-# Machine Learning
 tensorflow==2.15.0
-# Stock Data & Technical Analysis
 yfinance==0.2.33
 ta==0.11.0
-# MLOps & Monitoring
 mlflow==2.9.2
 schedule==1.2.1
-# Utilities
 joblib==1.3.2
 requests==2.31.0
+python-dotenv==1.0.0
+Werkzeug==3.0.1
