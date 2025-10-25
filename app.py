@@ -8,7 +8,15 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Import our custom stock API using Twelve Data
-from stock_api import get_stock_history, get_intraday_data
+from stock_api import (
+    get_stock_history, 
+    get_intraday_data,
+    get_company_news,
+    get_sentiment_analysis,
+    get_quote_data,
+    get_company_profile,
+    get_company_metrics
+)
 
 print("="*60)
 print("🚀 Stock Predictor App - Using Twelve Data API")
@@ -110,40 +118,16 @@ def get_stock_data(ticker):
         # Predict multiple days using LSTM model
         predictions = predict_multi_day_lstm(hist, current_price, days)
         
-        # Calculate profit/loss for each day
-        prediction_details = []
         today = datetime.now()
-        
-        for i, pred_price in enumerate(predictions):
-            day_num = i + 1
-            future_date = today + timedelta(days=day_num)
-            profit_loss = pred_price - current_price
-            profit_loss_percent = (profit_loss / current_price) * 100
-            
-            prediction_details.append({
-                'day': day_num,
-                'date': future_date.strftime('%Y-%m-%d'),
-                'day_name': future_date.strftime('%A'),
-                'price': float(round(pred_price, 2)),
-                'profit_loss': float(round(profit_loss, 2)),
-                'profit_loss_percent': float(round(profit_loss_percent, 2)),
-                'is_profit': bool(profit_loss > 0)
-            })
-        
-        # First day prediction (tomorrow)
-        predicted_price = predictions[0]
-        profit_loss = predicted_price - current_price
-        profit_loss_percent = (profit_loss / current_price) * 100
-        is_profit = profit_loss > 0
-        
+
         # Get historical data for chart (last 30 days)
         chart_dates = [date.strftime('%Y-%m-%d') for date in hist.index[-30:]]
         chart_prices = hist['Close'].tail(30).tolist()
-        
+
         # Future prediction dates
         future_dates = [(today + timedelta(days=i+1)).strftime('%Y-%m-%d') for i in range(days)]
         future_prices = [float(round(p, 2)) for p in predictions]
-        
+
         # Add predicted price for tomorrow
         tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
         
@@ -166,16 +150,94 @@ def get_stock_data(ticker):
             intraday_times = [d.strftime('%m/%d') for d in hist.index[-10:]]
             intraday_prices = hist['Close'].tail(10).tolist()
         
-        # Stock info (Twelve Data doesn't provide detailed info, use ticker name)
-        company_name = ticker
-        market_cap = 'N/A'
-        pe_ratio = 'N/A'
-        
+        # Stock info from Finnhub
+        company_profile = get_company_profile(ticker)
+        company_metrics = get_company_metrics(ticker)
+        quote_data = get_quote_data(ticker)
+
+        company_name = company_profile.get('name', ticker)
+        market_cap = company_profile.get('market_cap', 'N/A')
+        raw_pe_ratio = company_metrics.get('pe_ratio') if isinstance(company_metrics, dict) else None
+        pe_ratio = float(round(raw_pe_ratio, 2)) if isinstance(raw_pe_ratio, (int, float)) and not pd.isna(raw_pe_ratio) else 'N/A'
+
         volume = int(hist['Volume'].iloc[-1]) if 'Volume' in hist.columns else 0
-        
-        # Day change
-        day_change = current_price - previous_close
-        day_change_percent = (day_change / previous_close) * 100
+
+        if quote_data:
+            current_price = float(round(quote_data.get('current', current_price), 2))
+            previous_close = float(quote_data.get('previous_close', previous_close)) if previous_close else quote_data.get('previous_close', previous_close)
+            day_change = float(quote_data.get('change', current_price - previous_close))
+            day_change_percent = float(quote_data.get('change_percent', (day_change / previous_close) * 100 if previous_close else 0))
+        else:
+            day_change = current_price - previous_close
+            day_change_percent = (day_change / previous_close) * 100 if previous_close else 0
+
+        # Recalculate profit/loss metrics using (potentially updated) current price
+        prediction_details = []
+        for i, pred_price in enumerate(predictions):
+            day_num = i + 1
+            future_date = today + timedelta(days=day_num)
+            profit_loss = pred_price - current_price
+            profit_loss_percent = (profit_loss / current_price) * 100 if current_price else 0
+
+            prediction_details.append({
+                'day': day_num,
+                'date': future_date.strftime('%Y-%m-%d'),
+                'day_name': future_date.strftime('%A'),
+                'price': float(round(pred_price, 2)),
+                'profit_loss': float(round(profit_loss, 2)),
+                'profit_loss_percent': float(round(profit_loss_percent, 2)),
+                'is_profit': bool(profit_loss > 0)
+            })
+
+        # Prepare technical chart data (last 60 sessions)
+        ohlc_columns = ['Open', 'High', 'Low', 'Close']
+        volume_present = 'Volume' in hist.columns
+        selected_columns = ohlc_columns + (['Volume'] if volume_present else [])
+        recent_ohlcv = hist[selected_columns].tail(60)
+        candlestick_data = []
+        volume_data = []
+        for index, row in recent_ohlcv.iterrows():
+            candlestick_data.append({
+                'x': index.strftime('%Y-%m-%d'),
+                'o': float(round(row['Open'], 2)),
+                'h': float(round(row['High'], 2)),
+                'l': float(round(row['Low'], 2)),
+                'c': float(round(row['Close'], 2))
+            })
+            if volume_present:
+                volume_value = 0
+                if not pd.isna(row['Volume']):
+                    volume_value = int(float(row['Volume']))
+                volume_data.append({
+                    'x': index.strftime('%Y-%m-%d'),
+                    'y': volume_value
+                })
+
+        moving_average_data = {
+            'sma20': [],
+            'sma50': []
+        }
+        recent_ma = hist[['SMA_20', 'SMA_50']].tail(60)
+        has_sma20 = 'SMA_20' in recent_ma.columns
+        has_sma50 = 'SMA_50' in recent_ma.columns
+        for index, row in recent_ma.iterrows():
+            date_str = index.strftime('%Y-%m-%d')
+            if has_sma20 and not pd.isna(row['SMA_20']):
+                moving_average_data['sma20'].append({
+                    'x': date_str,
+                    'y': float(round(row['SMA_20'], 2))
+                })
+            if has_sma50 and not pd.isna(row['SMA_50']):
+                moving_average_data['sma50'].append({
+                    'x': date_str,
+                    'y': float(round(row['SMA_50'], 2))
+                })
+
+        # First day prediction (tomorrow)
+        predicted_price = predictions[0] if predictions else current_price
+        profit_loss = predicted_price - current_price
+        profit_loss_percent = (profit_loss / current_price) * 100 if current_price else 0
+        is_profit = profit_loss > 0
         
         response = {
             'success': True,
@@ -204,6 +266,11 @@ def get_stock_data(ticker):
             'intraday_data': {
                 'times': [str(t) for t in intraday_times],
                 'prices': [float(round(p, 2)) for p in intraday_prices]
+            },
+            'technical_chart': {
+                'candles': candlestick_data,
+                'volumes': volume_data,
+                'moving_averages': moving_average_data
             },
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
@@ -364,6 +431,155 @@ def predict_with_technical_analysis(hist, current_price):
         print(f"Technical analysis prediction error: {e}")
         # If all fails, predict slight upward trend
         return current_price * 1.002
+
+@app.route('/api/news/<ticker>')
+def get_news(ticker):
+    """Get company news from Finnhub API"""
+    try:
+        ticker = ticker.upper()
+        days = request.args.get('days', default=7, type=int)
+        
+        news = get_company_news(ticker, days=days)
+        
+        return jsonify({
+            'success': True,
+            'ticker': ticker,
+            'news': news,
+            'count': len(news)
+        })
+        
+    except Exception as e:
+        print(f"ERROR fetching news for {ticker}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Error fetching news: {str(e)}'
+        }), 500
+
+@app.route('/api/sentiment/<ticker>')
+def get_sentiment(ticker):
+    """Get sentiment analysis from Finnhub API"""
+    try:
+        ticker = ticker.upper()
+        
+        sentiment = get_sentiment_analysis(ticker)
+        
+        return jsonify({
+            'success': True,
+            'ticker': ticker,
+            'sentiment': sentiment
+        })
+        
+    except Exception as e:
+        print(f"ERROR fetching sentiment for {ticker}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Error fetching sentiment: {str(e)}'
+        }), 500
+
+@app.route('/api/technical/<ticker>')
+def get_technical_indicators(ticker):
+    """Get technical indicators for a stock"""
+    try:
+        ticker = ticker.upper()
+        
+        # Fetch stock data
+        hist = get_stock_history(ticker, days=60)
+        
+        if hist.empty or len(hist) < 2:
+            return jsonify({
+                'success': False,
+                'error': f'No data found for {ticker}'
+            }), 404
+        
+        # Calculate technical indicators
+        hist['SMA_20'] = hist['Close'].rolling(window=20).mean()
+        hist['EMA_20'] = hist['Close'].ewm(span=20, adjust=False).mean()
+        hist['RSI'] = ta.momentum.RSIIndicator(hist['Close']).rsi()
+        
+        # MACD
+        macd_indicator = ta.trend.MACD(hist['Close'])
+        hist['MACD'] = macd_indicator.macd()
+        hist['MACD_signal'] = macd_indicator.macd_signal()
+        hist['MACD_diff'] = macd_indicator.macd_diff()
+        
+        hist = hist.dropna()
+        
+        if hist.empty:
+            return jsonify({
+                'success': False,
+                'error': 'Insufficient data for technical analysis'
+            }), 500
+        
+        last_row = hist.iloc[-1]
+        
+        # Get RSI trend data (last 30 days)
+        rsi_data = hist['RSI'].tail(30).tolist()
+        rsi_dates = [d.strftime('%m/%d') for d in hist.index[-30:]]
+        
+        # Get MACD trend data
+        macd_data = hist['MACD'].tail(30).tolist()
+        macd_signal_data = hist['MACD_signal'].tail(30).tolist()
+        macd_dates = [d.strftime('%m/%d') for d in hist.index[-30:]]
+        
+        indicators = {
+            'RSI': {
+                'value': float(round(last_row['RSI'], 2)),
+                'signal': 'Overbought' if last_row['RSI'] > 70 else 'Oversold' if last_row['RSI'] < 30 else 'Neutral',
+                'trend_data': rsi_data,
+                'trend_dates': rsi_dates
+            },
+            'EMA': {
+                'value': float(round(last_row['EMA_20'], 2)),
+                'signal': 'Bullish' if hist['Close'].iloc[-1] > last_row['EMA_20'] else 'Bearish'
+            },
+            'MACD': {
+                'value': float(round(last_row['MACD'], 2)),
+                'signal_line': float(round(last_row['MACD_signal'], 2)),
+                'histogram': float(round(last_row['MACD_diff'], 2)),
+                'signal': 'Bullish' if last_row['MACD'] > last_row['MACD_signal'] else 'Bearish',
+                'trend_data': macd_data,
+                'signal_data': macd_signal_data,
+                'trend_dates': macd_dates
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'ticker': ticker,
+            'indicators': indicators
+        })
+        
+    except Exception as e:
+        print(f"ERROR fetching technical indicators for {ticker}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Error fetching technical indicators: {str(e)}'
+        }), 500
+
+@app.route('/api/company/<ticker>')
+def get_company_info(ticker):
+    """Get company profile from Finnhub API"""
+    try:
+        ticker = ticker.upper()
+        
+        profile = get_company_profile(ticker)
+        quote = get_quote_data(ticker)
+        
+        return jsonify({
+            'success': True,
+            'ticker': ticker,
+            'profile': profile,
+            'quote': quote
+        })
+        
+    except Exception as e:
+        print(f"ERROR fetching company info for {ticker}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Error fetching company info: {str(e)}'
+        }), 500
 
 @app.route('/old_predict', methods=['GET', 'POST'])
 def predict_stock_old():

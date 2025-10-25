@@ -23,7 +23,7 @@ class DataIngestion:
         end = datetime.strptime(self.end_date, '%Y-%m-%d')
         days = (end - start).days
         
-        print(f"📊 Fetching {self.ticker} data from {self.start_date} to {self.end_date} ({days} days)")
+        print(f" Fetching {self.ticker} data from {self.start_date} to {self.end_date} ({days} days)")
         
         # Twelve Data API - fetch with appropriate interval
         data = get_stock_history(self.ticker, days=min(days, 5000))  # API limit: 5000 points

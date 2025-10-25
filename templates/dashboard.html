@@ -1,286 +1,183 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Stock Trading Dashboard | AI Predictor</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1"></script>
-    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.4.0/dist/chartjs-adapter-luxon.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.2.1/dist/chartjs-chart-financial.min.js"></script>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="header-left">
-                <h1 class="logo">
-                    <img src="{{ url_for('static', filename='vionex-logo.png') }}" alt="VIONEX Finance Logo" class="logo-img">
-                    <span class="logo-text">AI Stock Predictor</span>
-                </h1>
-            </div>
-            <div class="header-right">
-                <span class="live-time" id="liveTime"></span>
-                <button class="theme-toggle" id="themeToggle">
-                    <i class="fas fa-moon"></i>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Dashboard -->
     <main class="dashboard">
         <div class="container">
-            <!-- Search Section -->
-            <div class="search-section">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input 
-                        type="text" 
-                        id="tickerInput" 
-                        placeholder="Enter stock symbol (e.g., AAPL, TSLA, GOOGL)" 
-                        value="AAPL"
-                    >
-                    <div class="days-selector">
-                        <label for="daysInput"><i class="fas fa-calendar-alt"></i> Predict:</label>
-                        <input 
-                            type="number" 
-                            id="daysInput" 
-                            min="1" 
-                            max="7" 
-                            value="1"
-                            class="days-input"
-                        >
-                        <span class="days-label">day(s)</span>
-                    </div>
-                    <button id="searchBtn" class="btn-primary">
-                        <i class="fas fa-brain"></i> Predict
-                    </button>
+            <div class="top-bar">
+                <div class="brand">
+                    <img src="{{ url_for('static', filename='vionex-logo.png') }}" alt="VIONEX Finance Logo" class="logo-img">
+                    <span class="brand-name">AI Stock Predictor</span>
                 </div>
-                <div class="quick-stocks">
-                    <span class="label">Popular:</span>
-                    <button class="quick-btn" data-ticker="AAPL">AAPL</button>
-                    <button class="quick-btn" data-ticker="TSLA">TSLA</button>
-                    <button class="quick-btn" data-ticker="GOOGL">GOOGL</button>
-                    <button class="quick-btn" data-ticker="MSFT">MSFT</button>
-                    <button class="quick-btn" data-ticker="AMZN">AMZN</button>
-                    <span class="label ml-3">Quick Predict:</span>
-                    <button class="days-quick-btn" data-days="1">1 Day</button>
-                    <button class="days-quick-btn" data-days="3">3 Days</button>
-                    <button class="days-quick-btn" data-days="7">7 Days</button>
-                </div>
+                <span class="live-time" id="liveTime"></span>
             </div>
 
-            <!-- Loading Spinner -->
+            <div class="search-bar">
+                <div class="search-input">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="tickerInput" placeholder="Search any company" value="AAPL" autocomplete="off">
+                </div>
+                <button id="searchBtn" class="btn-primary">
+                    Predict
+                </button>
+            </div>
+
             <div id="loadingSpinner" class="loading-spinner hidden">
                 <div class="spinner"></div>
                 <p>Analyzing stock data...</p>
             </div>
 
-            <!-- Error Message -->
             <div id="errorMessage" class="error-message hidden"></div>
 
-            <!-- Dashboard Content -->
             <div id="dashboardContent" class="dashboard-content hidden">
-                <!-- Stock Info Header -->
-                <div class="stock-header">
-                    <div class="stock-title">
-                        <h2 id="companyName">Apple Inc.</h2>
-                        <span id="tickerSymbol" class="ticker-badge">AAPL</span>
-                    </div>
-                    <div class="last-updated">
-                        <i class="fas fa-clock"></i>
-                        <span id="lastUpdated"></span>
-                        <button id="refreshBtn" class="btn-refresh">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Stats Cards Grid -->
-                <div class="stats-grid">
-                    <!-- Current Price Card -->
-                    <div class="stat-card">
-                        <div class="stat-icon current">
-                            <i class="fas fa-dollar-sign"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-label">Current Price</div>
-                            <div class="stat-value" id="currentPrice">$0.00</div>
-                            <div class="stat-change" id="dayChange">
-                                <i class="fas fa-arrow-up"></i> $0.00 (0.00%)
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Predicted Price Card -->
-                    <div class="stat-card">
-                        <div class="stat-icon predicted">
-                            <i class="fas fa-crystal-ball"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-label">Predicted Tomorrow</div>
-                            <div class="stat-value" id="predictedPrice">$0.00</div>
-                            <div class="stat-subtext">Next Day Forecast</div>
-                        </div>
-                    </div>
-
-                    <!-- Profit/Loss Card -->
-                    <div class="stat-card profit-loss-card">
-                        <div class="stat-icon" id="profitLossIcon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-label">
-                                Profit / Loss 
-                                <button onclick="clearAllTrades()" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:12px;margin-left:5px;" title="Reset all trades">
-                                    <i class="fas fa-redo"></i>
-                                </button>
-                            </div>
-                            <div class="stat-value profit-loss" id="profitLoss">$0.00</div>
-                            <div class="stat-badge" id="profitLossBadge">
-                                <i class="fas fa-info-circle"></i> Calculating...
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Change Percentage Card -->
-                    <div class="stat-card">
-                        <div class="stat-icon percentage">
-                            <i class="fas fa-percentage"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-label">Expected Change</div>
-                            <div class="stat-value" id="changePercent">0.00%</div>
-                            <div class="stat-subtext">From Current Price</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Charts Section -->
-                <div class="charts-section">
-                    <!-- Chart Tabs -->
-                    <div class="chart-tabs">
-                        <button class="chart-tab active" data-period="30">
-                            <i class="fas fa-calendar-alt"></i> 30 Days
-                        </button>
-                        <button class="chart-tab" data-period="7">
-                            <i class="fas fa-calendar-week"></i> 7 Days
-                        </button>
-                        <button class="chart-tab" data-period="today">
-                            <i class="fas fa-clock"></i> Today
-                        </button>
-                    </div>
-
-                    <!-- Main Chart -->
-                    <div class="chart-container main-chart">
-                        <div class="chart-header">
-                            <h3>
-                                <i class="fas fa-chart-line"></i> 
-                                <span id="chartTitle">Price Chart</span>
-                            </h3>
-                            <div class="chart-type-toggle">
-                                <button class="chart-type-btn active" data-chart-type="line">
-                                    <i class="fas fa-chart-line"></i> Line
-                                </button>
-                                <button class="chart-type-btn" data-chart-type="candlestick">
-                                    <i class="fas fa-chart-candlestick"></i> Candlestick
-                                </button>
-                            </div>
-                        </div>
-                        <div class="chart-canvas-wrapper">
-                            <div id="chartPlaceholder" class="chart-placeholder">
-                                <div class="placeholder-content">
-                                    <i class="fas fa-chart-area fa-3x"></i>
-                                    <p>Select a time period to view the chart</p>
-                                    <div class="placeholder-actions">
-                                        <button class="placeholder-btn" onclick="loadChart('30')">
-                                            <i class="fas fa-calendar-alt"></i> Load 30 Days
-                                        </button>
-                                        <button class="placeholder-btn" onclick="loadChart('today')">
-                                            <i class="fas fa-clock"></i> Load Today
-                                        </button>
+                <div class="dashboard-grid">
+                    <div class="primary-column">
+                        <div class="card overview-card">
+                            <div class="overview-header">
+                                <div class="company-info">
+                                    <h2 id="companyName">Apple Inc.</h2>
+                                    <span class="ticker-chip" id="tickerSymbol">AAPL</span>
+                                </div>
+                                <div class="price-summary">
+                                    <div class="metric">
+                                        <span class="metric-label">Current price</span>
+                                        <span class="metric-value" id="currentPriceValue">$0.00</span>
+                                        <span class="metric-delta" id="dayChangeDetail">+0.00 (0.00%)</span>
+                                    </div>
+                                    <div class="metric">
+                                        <span class="metric-label">Predicted price</span>
+                                        <span class="metric-value" id="predictedPriceValue">$0.00</span>
+                                        <span class="metric-subtext">Next day forecast</span>
                                     </div>
                                 </div>
                             </div>
-                            <canvas id="mainChart" class="hidden"></canvas>
-                            <div id="chartLoading" class="chart-loading hidden">
-                                <div class="spinner-small"></div>
-                                <p>Loading chart data...</p>
+
+                            <div class="card-section">
+                                <div class="section-header">
+                                    <div>
+                                        <h3>Stock Price Prediction</h3>
+                                        <span class="section-subtitle">7 Days</span>
+                                    </div>
+                                    <button id="refreshBtn" class="icon-button" title="Refresh">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                                <div class="chart-wrapper">
+                                    <canvas id="mainChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="card-section">
+                                <div class="section-header">
+                                    <h3>Technical Chart</h3>
+                                </div>
+                                <div class="chart-wrapper">
+                                    <canvas id="technicalChart"></canvas>
+                                </div>
+                                <div class="chart-wrapper volume">
+                                    <canvas id="volumeChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="mini-panels">
+                                <div class="card mini-card sentiment-card">
+                                    <div class="section-header">
+                                        <h3>Stock Sentiment</h3>
+                                    </div>
+                                    <div class="sentiment-gauge-container">
+                                        <canvas id="sentimentGauge"></canvas>
+                                        <div class="sentiment-label" id="sentimentLabel">Neutral</div>
+                                    </div>
+                                </div>
+                                <div class="card mini-card performance-card">
+                                    <div class="section-header">
+                                        <h3>Performance</h3>
+                                    </div>
+                                    <div class="performance-chart">
+                                        <canvas id="performanceChart"></canvas>
+                                    </div>
+                                    <div class="performance-value" id="performanceValue">+0.00%</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Additional Stats -->
-                    <div class="additional-stats">
-                        <div class="stat-item">
-                            <div class="stat-label">
-                                <i class="fas fa-building"></i> Market Cap
+                    <aside class="sidebar">
+                        <div class="card signal-card">
+                            <div class="sidebar-header">
+                                <span>AI Trading Signal</span>
+                                <i class="fas fa-chevron-up"></i>
                             </div>
-                            <div class="stat-value" id="marketCap">N/A</div>
+                            <div class="signal-badge" id="tradingSignalBadge">ANALYZING...</div>
+                            <p class="signal-message" id="tradingSignalMessage">Analyzing market conditions...</p>
                         </div>
-                        <div class="stat-item">
-                            <div class="stat-label">
-                                <i class="fas fa-chart-bar"></i> Volume
-                            </div>
-                            <div class="stat-value" id="volume">N/A</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">
-                                <i class="fas fa-divide"></i> P/E Ratio
-                            </div>
-                            <div class="stat-value" id="peRatio">N/A</div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Trading Signal -->
-                <div class="trading-signal">
-                    <div class="signal-header">
-                        <i class="fas fa-signal"></i> AI Trading Signal
-                    </div>
-                    <div class="signal-content" id="tradingSignal">
-                        <div class="signal-badge">ANALYZING...</div>
-                        <p>Analyzing market conditions...</p>
-                    </div>
-                </div>
+                        <div class="card indicators-card">
+                            <h4>Technical Indicators</h4>
+                            <div class="indicator-item">
+                                <div class="indicator-label">RSI</div>
+                                <div class="indicator-chart">
+                                    <canvas id="rsiMiniChart"></canvas>
+                                </div>
+                                <div class="indicator-value" id="rsiValue">--</div>
+                            </div>
+                            <div class="indicator-item">
+                                <div class="indicator-label">EMA</div>
+                                <div class="indicator-value" id="emaValue">$--</div>
+                            </div>
+                            <div class="indicator-item">
+                                <div class="indicator-label">MACD</div>
+                                <div class="indicator-chart">
+                                    <canvas id="macdMiniChart"></canvas>
+                                </div>
+                                <div class="indicator-value" id="macdValue">--</div>
+                            </div>
+                        </div>
 
-                <!-- Multi-Day Predictions Table -->
-                <div class="predictions-table-container" id="predictionsTableContainer" style="display:none;">
-                    <div class="table-header">
-                        <h3><i class="fas fa-calendar-week"></i> <span id="predictionDaysTitle">7-Day</span> Price Predictions</h3>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="predictions-table">
-                            <thead>
-                                <tr>
-                                    <th><i class="fas fa-hashtag"></i> Day</th>
-                                    <th><i class="fas fa-calendar"></i> Date</th>
-                                    <th><i class="fas fa-dollar-sign"></i> Predicted Price</th>
-                                    <th><i class="fas fa-chart-line"></i> Change</th>
-                                    <th><i class="fas fa-percentage"></i> Change %</th>
-                                    <th><i class="fas fa-signal"></i> Signal</th>
-                                </tr>
-                            </thead>
-                            <tbody id="predictionsTableBody">
-                                <!-- Will be populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
+                        <div class="card stats-card">
+                            <h4>Stats</h4>
+                            <div class="stat-row">
+                                <span>Market cap</span>
+                                <span id="statMarketCap">--</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>Volume</span>
+                                <span id="statVolume">--</span>
+                            </div>
+                            <div class="stat-row">
+                                <span>P/E ratio</span>
+                                <span id="statPE">--</span>
+                            </div>
+                        </div>
+
+                        <div class="card news-card">
+                            <div class="sidebar-header">
+                                <span>News</span>
+                                <button class="icon-button" id="refreshNews" title="Refresh news">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <div id="newsContainer" class="news-list">
+                                <div class="news-loading">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading news...
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
                 </div>
             </div>
         </div>
     </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <p>
-            <i class="fas fa-shield-alt"></i> 
-            AI-Powered Predictions • Real-Time Data • Auto-Refresh Every 60s
-        </p>
-    </footer>
 
     <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
