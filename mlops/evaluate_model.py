@@ -15,7 +15,7 @@ import seaborn as sns
 def evaluate_model():
     """Evaluate the trained model"""
     
-    print("🔍 Starting model evaluation...")
+    print("Starting model evaluation...")
     
     # Load model and data
     model = load_model('artifacts/stock_lstm_model.h5')
@@ -47,7 +47,7 @@ def evaluate_model():
         'mape': float(mape)
     }
     
-    print("\n📊 Evaluation Metrics:")
+    print("\n Evaluation Metrics:")
     print(f"  MSE:  {mse:.4f}")
     print(f"  RMSE: {rmse:.4f}")
     print(f"  MAE:  {mae:.4f}")
@@ -59,7 +59,7 @@ def evaluate_model():
     with open('artifacts/evaluation_metrics.json', 'w') as f:
         json.dump(metrics, f, indent=2)
     
-    print("\n✅ Metrics saved to artifacts/evaluation_metrics.json")
+    print("\n Metrics saved to artifacts/evaluation_metrics.json")
     
     # Create prediction plot
     plt.figure(figsize=(12, 6))
@@ -74,7 +74,7 @@ def evaluate_model():
     plt.savefig('artifacts/predictions_plot.png', dpi=150)
     plt.close()
     
-    print("✅ Prediction plot saved to artifacts/predictions_plot.png")
+    print(" Prediction plot saved to artifacts/predictions_plot.png")
     
     # Create error distribution plot
     errors = y_test.flatten() - y_pred.flatten()
@@ -91,14 +91,14 @@ def evaluate_model():
     plt.savefig('artifacts/error_distribution.png', dpi=150)
     plt.close()
     
-    print("✅ Error distribution plot saved to artifacts/error_distribution.png")
+    print(" Error distribution plot saved to artifacts/error_distribution.png")
     
     return metrics
 
 if __name__ == '__main__':
     try:
         metrics = evaluate_model()
-        print("\n🎉 Evaluation completed successfully!")
+        print("\n Evaluation completed successfully!")
     except Exception as e:
-        print(f"\n❌ Evaluation failed: {e}")
+        print(f"\n Evaluation failed: {e}")
         raise

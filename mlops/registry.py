@@ -49,7 +49,7 @@ class ModelRegistry:
             with open(self.metadata_file, 'r') as f:
                 self.metadata = json.load(f)
         except Exception as e:
-            print(f"⚠️ Error loading metadata: {e}")
+            print(f"Error loading metadata: {e}")
             self._initialize_metadata()
     
     def _save_metadata(self):
@@ -58,7 +58,7 @@ class ModelRegistry:
             with open(self.metadata_file, 'w') as f:
                 json.dump(self.metadata, f, indent=4)
         except Exception as e:
-            print(f"❌ Error saving metadata: {e}")
+            print(f"Error saving metadata: {e}")
     
     def register_model(
         self, 
@@ -116,9 +116,9 @@ class ModelRegistry:
         self.metadata['models'].append(model_info)
         self._save_metadata()
         
-        print(f"✅ Model registered: {ticker} v{version}")
-        print(f"   📊 Validation Loss: {metrics.get('val_loss', 'N/A'):.6f}")
-        print(f"   📁 Path: {version_dir}")
+        print(f"Model registered: {ticker} v{version}")
+        print(f"Validation Loss: {metrics.get('val_loss', 'N/A'):.6f}")
+        print(f"Path: {version_dir}")
         
         return model_info
     
@@ -201,10 +201,10 @@ class ModelRegistry:
                 model['status'] = 'archived'
                 model['archived_at'] = datetime.now().isoformat()
                 self._save_metadata()
-                print(f"📦 Model archived: {version_id}")
+                print(f"Model archived: {version_id}")
                 return
         
-        print(f"⚠️ Model not found: {version_id}")
+        print(f"Model not found: {version_id}")
     
     def get_model_stats(self, ticker: str) -> Dict:
         """
@@ -241,7 +241,7 @@ if __name__ == "__main__":
     
     # Print all registered models
     models = registry.list_models()
-    print(f"\n📋 Total Models: {len(models)}")
+    print(f"\n Total Models: {len(models)}")
     
     for model in models:
         print(f"\n{model['ticker']} v{model['version']}")

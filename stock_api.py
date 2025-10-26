@@ -49,11 +49,11 @@ def get_stock_history(ticker, days=60, interval='1day'):
         
         # Check for errors
         if 'status' in data and data['status'] == 'error':
-            print(f"❌ API Error: {data.get('message', 'Unknown error')}")
+            print(f" API Error: {data.get('message', 'Unknown error')}")
             return pd.DataFrame()
         
         if 'values' not in data:
-            print(f"❌ No data returned for {ticker}")
+            print(f" No data returned for {ticker}")
             return pd.DataFrame()
         
         # Convert to DataFrame
@@ -82,17 +82,17 @@ def get_stock_history(ticker, days=60, interval='1day'):
         df['Dividends'] = 0.0
         df['Stock Splits'] = 0.0
         
-        print(f"✅ Successfully fetched {len(df)} data points for {ticker}")
-        print(f"   Date range: {df.index[0].strftime('%Y-%m-%d')} to {df.index[-1].strftime('%Y-%m-%d')}")
-        print(f"   Latest price: ${df['Close'].iloc[-1]:.2f}")
+        print(f"Successfully fetched {len(df)} data points for {ticker}")
+        print(f"Date range: {df.index[0].strftime('%Y-%m-%d')} to {df.index[-1].strftime('%Y-%m-%d')}")
+        print(f"Latest price: ${df['Close'].iloc[-1]:.2f}")
         
         return df
         
     except requests.exceptions.RequestException as e:
-        print(f"❌ Network error fetching {ticker}: {e}")
+        print(f"Network error fetching {ticker}: {e}")
         return pd.DataFrame()
     except Exception as e:
-        print(f"❌ Error processing {ticker} data: {e}")
+        print(f"Error processing {ticker} data: {e}")
         return pd.DataFrame()
 
 
@@ -113,7 +113,7 @@ def get_intraday_data(ticker, interval='5min', outputsize=78):
     
     for try_interval in intervals_to_try:
         try:
-            print(f"📈 Fetching intraday data for {ticker} with {try_interval} interval...")
+            print(f"Fetching intraday data for {ticker} with {try_interval} interval...")
             
             url = f'{BASE_URL}/time_series'
             params = {
@@ -129,7 +129,7 @@ def get_intraday_data(ticker, interval='5min', outputsize=78):
             data = response.json()
             
             if 'values' not in data or not data['values']:
-                print(f"⚠️ No data for {try_interval}, trying next interval...")
+                print(f"No data for {try_interval}, trying next interval...")
                 continue
             
             # Convert to DataFrame
@@ -157,18 +157,18 @@ def get_intraday_data(ticker, interval='5min', outputsize=78):
             df_today = df[df.index.date == today]
             
             if not df_today.empty:
-                print(f"✅ Fetched {len(df_today)} intraday data points for today ({try_interval})")
+                print(f"Fetched {len(df_today)} intraday data points for today ({try_interval})")
                 return df_today
             else:
-                print(f"✅ Fetched {len(df)} recent intraday data points ({try_interval})")
+                print(f"Fetched {len(df)} recent intraday data points ({try_interval})")
                 return df
             
         except Exception as e:
-            print(f"⚠️ Error with {try_interval}: {e}")
+            print(f"Error with {try_interval}: {e}")
             continue
     
     # If all intervals fail, return empty DataFrame
-    print(f"❌ No intraday data available for {ticker}")
+    print(f"No intraday data available for {ticker}")
     return pd.DataFrame()
 
 
@@ -203,7 +203,7 @@ def get_real_time_price(ticker):
         }
         
     except Exception as e:
-        print(f"❌ Error fetching real-time price: {e}")
+        print(f" Error fetching real-time price: {e}")
         return None
 
 
@@ -218,7 +218,7 @@ def get_stock_fundamentals(ticker):
         dict: Fundamental data including market cap, P/E ratio, company name
     """
     try:
-        print(f"📊 Fetching fundamentals for {ticker}...")
+        print(f" Fetching fundamentals for {ticker}...")
         
         # Get statistics endpoint for fundamentals
         url = f'{BASE_URL}/statistics'
@@ -261,7 +261,7 @@ def get_stock_fundamentals(ticker):
                 if not company_name or company_name == ticker:
                     company_name = quote_data.get('name', ticker)
         
-        print(f"✅ Fundamentals: {company_name}, Market Cap: {market_cap}, P/E: {pe_ratio}")
+        print(f"Fundamentals: {company_name}, Market Cap: {market_cap}, P/E: {pe_ratio}")
         
         return {
             'company_name': company_name,
@@ -270,7 +270,7 @@ def get_stock_fundamentals(ticker):
         }
         
     except Exception as e:
-        print(f"❌ Error fetching fundamentals: {e}")
+        print(f"Error fetching fundamentals: {e}")
         return {
             'company_name': ticker,
             'market_cap': None,
@@ -290,10 +290,10 @@ if __name__ == "__main__":
     for ticker in tickers:
         hist = get_stock_history(ticker, days=60)
         if not hist.empty:
-            print(f"\n✅ {ticker} - Last 5 days:")
+            print(f"\n{ticker} - Last 5 days:")
             print(hist[['Open', 'High', 'Low', 'Close', 'Volume']].tail())
         else:
-            print(f"\n❌ {ticker} - Failed to fetch data")
+            print(f"\n {ticker} - Failed to fetch data")
         print("-"*60)
 
 
@@ -311,7 +311,7 @@ def get_company_news(ticker, days=7):
         list: List of news articles with title, summary, url, source, image, and timestamp
     """
     try:
-        print(f"📰 Fetching news for {ticker} from Finnhub...")
+        print(f"Fetching news for {ticker} from Finnhub...")
         
         # Calculate date range
         end_date = datetime.now()
@@ -330,7 +330,7 @@ def get_company_news(ticker, days=7):
         news_data = response.json()
         
         if not news_data:
-            print(f"⚠️ No news found for {ticker}")
+            print(f"No news found for {ticker}")
             return []
         
         # Format news articles
@@ -346,11 +346,11 @@ def get_company_news(ticker, days=7):
                 'timestamp': article.get('datetime', 0)
             })
         
-        print(f"✅ Fetched {len(news_articles)} news articles for {ticker}")
+        print(f"Fetched {len(news_articles)} news articles for {ticker}")
         return news_articles
         
     except Exception as e:
-        print(f"❌ Error fetching news from Finnhub: {e}")
+        print(f"Error fetching news from Finnhub: {e}")
         return []
 
 
@@ -365,7 +365,7 @@ def get_sentiment_analysis(ticker):
         dict: Sentiment data including overall sentiment, score, and breakdown
     """
     try:
-        print(f"🎭 Fetching sentiment analysis for {ticker} from Finnhub...")
+        print(f"Fetching sentiment analysis for {ticker} from Finnhub...")
         
         # Get news sentiment
         url = f'{FINNHUB_BASE_URL}/news-sentiment'
@@ -378,7 +378,7 @@ def get_sentiment_analysis(ticker):
         
         # If news-sentiment not available, analyze company news
         if response.status_code != 200 or not response.json():
-            print("⚠️ Using alternative sentiment calculation from news...")
+            print("Using alternative sentiment calculation from news...")
             return calculate_sentiment_from_news(ticker)
         
         sentiment_data = response.json()
@@ -413,11 +413,11 @@ def get_sentiment_analysis(ticker):
             'buzz_score': buzz.get('buzz', 0)
         }
         
-        print(f"✅ Sentiment: {sentiment_label} (Score: {overall_score:.2f})")
+        print(f"Sentiment: {sentiment_label} (Score: {overall_score:.2f})")
         return result
         
     except Exception as e:
-        print(f"❌ Error fetching sentiment from Finnhub: {e}")
+        print(f"Error fetching sentiment from Finnhub: {e}")
         return calculate_sentiment_from_news(ticker)
 
 
@@ -500,7 +500,7 @@ def calculate_sentiment_from_news(ticker):
         }
         
     except Exception as e:
-        print(f"❌ Error calculating sentiment: {e}")
+        print(f"Error calculating sentiment: {e}")
         return {
             'sentiment': 'NEUTRAL',
             'sentiment_class': 'neutral',
@@ -523,7 +523,7 @@ def get_quote_data(ticker):
         dict: Real-time quote with current price, change, percent change, high, low, open, previous close
     """
     try:
-        print(f"💹 Fetching real-time quote for {ticker} from Finnhub...")
+        print(f"Fetching real-time quote for {ticker} from Finnhub...")
         
         url = f'{FINNHUB_BASE_URL}/quote'
         params = {
@@ -551,11 +551,11 @@ def get_quote_data(ticker):
             'timestamp': quote.get('t', int(datetime.now().timestamp()))
         }
         
-        print(f"✅ Quote: ${current:.2f} ({change:+.2f}, {change_percent:+.2f}%)")
+        print(f"Quote: ${current:.2f} ({change:+.2f}, {change_percent:+.2f}%)")
         return result
         
     except Exception as e:
-        print(f"❌ Error fetching quote from Finnhub: {e}")
+        print(f"Error fetching quote from Finnhub: {e}")
         return None
 
 
@@ -570,7 +570,7 @@ def get_company_profile(ticker):
         dict: Company profile with name, market cap, industry, etc.
     """
     try:
-        print(f"🏢 Fetching company profile for {ticker} from Finnhub...")
+        print(f"Fetching company profile for {ticker} from Finnhub...")
         
         url = f'{FINNHUB_BASE_URL}/stock/profile2'
         params = {
@@ -593,11 +593,11 @@ def get_company_profile(ticker):
             'exchange': profile.get('exchange', 'NASDAQ')
         }
         
-        print(f"✅ Company: {result['name']} ({result['industry']})")
+        print(f"Company: {result['name']} ({result['industry']})")
         return result
         
     except Exception as e:
-        print(f"❌ Error fetching company profile from Finnhub: {e}")
+        print(f"Error fetching company profile from Finnhub: {e}")
         return {
             'name': ticker,
             'ticker': ticker,
@@ -613,7 +613,7 @@ def get_company_profile(ticker):
 def get_company_metrics(ticker):
     """Fetch fundamental metrics (including P/E ratio) from Finnhub."""
     try:
-        print(f"📊 Fetching fundamental metrics for {ticker} from Finnhub...")
+        print(f"Fetching fundamental metrics for {ticker} from Finnhub...")
 
         url = f'{FINNHUB_BASE_URL}/stock/metric'
         params = {
@@ -652,7 +652,7 @@ def get_company_metrics(ticker):
             None
         )
 
-        print("✅ Metrics retrieved" if pe_ratio is not None else "⚠️ P/E ratio unavailable from metrics response")
+        print("Metrics retrieved" if pe_ratio is not None else "⚠️ P/E ratio unavailable from metrics response")
 
         return {
             'pe_ratio': pe_ratio,
@@ -660,7 +660,7 @@ def get_company_metrics(ticker):
         }
 
     except Exception as exc:
-        print(f"❌ Error fetching metrics from Finnhub: {exc}")
+        print(f"Error fetching metrics from Finnhub: {exc}")
         return {
             'pe_ratio': None,
             'eps': None

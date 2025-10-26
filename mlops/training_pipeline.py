@@ -64,51 +64,50 @@ class MLOpsTrainingPipeline:
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         print(f"\n{'='*70}")
-        print(f"🤖 VIONEX MLOps Training Pipeline")
         print(f"{'='*70}")
-        print(f"📊 Ticker: {ticker}")
-        print(f"⏰ Started: {timestamp}")
+        print(f"Ticker: {ticker}")
+        print(f"Started: {timestamp}")
         print(f"{'='*70}\n")
         
         try:
             # Step 1: Data Ingestion
-            print("📥 Step 1/6: Data Ingestion")
+            print("Step 1/6: Data Ingestion")
             print("-" * 70)
             raw_data = self._ingest_data(ticker)
-            print(f"✅ Fetched {len(raw_data)} data points\n")
+            print(f"Fetched {len(raw_data)} data points\n")
             
             # Step 2: Data Preprocessing
             print("🔧 Step 2/6: Data Preprocessing")
             print("-" * 70)
             train_data, test_data = self._preprocess_data(raw_data)
-            print(f"✅ Train: {len(train_data)} | Test: {len(test_data)}\n")
+            print(f"Train: {len(train_data)} | Test: {len(test_data)}\n")
             
             # Step 3: Data Transformation
-            print("⚙️ Step 3/6: Data Transformation")
+            print("Step 3/6: Data Transformation")
             print("-" * 70)
             X_train, y_train, X_test, y_test, scaler = self._transform_data(
                 train_data, test_data
             )
-            print(f"✅ X_train: {X_train.shape} | y_train: {y_train.shape}\n")
+            print(f"X_train: {X_train.shape} | y_train: {y_train.shape}\n")
             
             # Step 4: Model Training
-            print("🧠 Step 4/6: Model Training")
+            print("Step 4/6: Model Training")
             print("-" * 70)
             model, history = self._train_model(
                 ticker, X_train, y_train, X_test, y_test,
                 epochs, batch_size
             )
-            print(f"✅ Training completed in {len(history.history['loss'])} epochs\n")
+            print(f"Training completed in {len(history.history['loss'])} epochs\n")
             
             # Step 5: Model Evaluation
-            print("📊 Step 5/6: Model Evaluation")
+            print("Step 5/6: Model Evaluation")
             print("-" * 70)
             metrics = self._evaluate_model(model, history, X_test, y_test, len(train_data))
             self._print_metrics(metrics)
             print()
             
             # Step 6: Save & Register
-            print("💾 Step 6/6: Save & Register Model")
+            print("Step 6/6: Save & Register Model")
             print("-" * 70)
             model_info = self._save_and_register(
                 ticker, model, scaler, metrics
@@ -117,19 +116,17 @@ class MLOpsTrainingPipeline:
             
             # Success summary
             print(f"{'='*70}")
-            print(f"✅ TRAINING COMPLETED SUCCESSFULLY")
-            print(f"{'='*70}")
-            print(f"📊 Ticker: {ticker}")
-            print(f"🎯 Version: v{model_info['version']}")
-            print(f"📉 Validation Loss: {metrics['val_loss']:.6f}")
-            print(f"⏰ Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"Ticker: {ticker}")
+            print(f"Version: v{model_info['version']}")
+            print(f"Validation Loss: {metrics['val_loss']:.6f}")
+            print(f"Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             print(f"{'='*70}\n")
             
             return model_info
             
         except Exception as e:
             print(f"\n{'='*70}")
-            print(f"❌ TRAINING FAILED")
+            print(f" TRAINING FAILED")
             print(f"{'='*70}")
             print(f"Error: {str(e)}")
             print(f"{'='*70}\n")
@@ -245,25 +242,25 @@ class MLOpsTrainingPipeline:
     
     def _print_metrics(self, metrics: Dict):
         """Print metrics in formatted output"""
-        print(f"  📈 Train Loss:      {metrics['train_loss']:.6f}")
-        print(f"  📉 Validation Loss: {metrics['val_loss']:.6f}")
-        print(f"  🎯 Test Loss:       {metrics['test_loss']:.6f}")
-        print(f"  📊 RMSE:            {metrics['rmse']:.6f}")
-        print(f"  📊 MAE:             {metrics['mae']:.6f}")
-        print(f"  🔢 Epochs:          {metrics['epochs_trained']}")
+        print(f"Train Loss:      {metrics['train_loss']:.6f}")
+        print(f"Validation Loss: {metrics['val_loss']:.6f}")
+        print(f" Test Loss:       {metrics['test_loss']:.6f}")
+        print(f" RMSE:            {metrics['rmse']:.6f}")
+        print(f" MAE:             {metrics['mae']:.6f}")
+        print(f"  Epochs:          {metrics['epochs_trained']}")
     
     def _save_and_register(self, ticker: str, model, scaler, metrics: Dict) -> Dict:
         """Save model artifacts and register in MLOps registry"""
         # Save model
         model_path = os.path.join(self.artifacts_dir, f'{ticker}_lstm_model.h5')
         model.save(model_path)
-        print(f"  ✅ Model saved: {model_path}")
+        print(f"Model saved: {model_path}")
         
         # Save scaler
         scaler_path = os.path.join(self.artifacts_dir, f'{ticker}_scaler.pkl')
         with open(scaler_path, 'wb') as f:
             pickle.dump(scaler, f)
-        print(f"  ✅ Scaler saved: {scaler_path}")
+        print(f" Scaler saved: {scaler_path}")
         
         # Register in MLOps registry
         model_info = self.registry.register_model(
@@ -303,7 +300,7 @@ class MLOpsTrainingPipeline:
         failed = []
         
         print(f"\n{'#'*70}")
-        print(f"🚀 BATCH TRAINING: {len(tickers)} stocks")
+        print(f"BATCH TRAINING: {len(tickers)} stocks")
         print(f"{'#'*70}\n")
         
         for i, ticker in enumerate(tickers, 1):
@@ -313,16 +310,16 @@ class MLOpsTrainingPipeline:
                 model_info = self.train_model(ticker, **kwargs)
                 results[ticker] = model_info
             except Exception as e:
-                print(f"❌ Failed: {ticker} - {str(e)}")
+                print(f" Failed: {ticker} - {str(e)}")
                 failed.append(ticker)
         
         # Summary
         print(f"\n{'#'*70}")
-        print(f"📊 BATCH TRAINING SUMMARY")
+        print(f"BATCH TRAINING SUMMARY")
         print(f"{'#'*70}")
-        print(f"✅ Successful: {len(results)}/{len(tickers)}")
+        print(f" Successful: {len(results)}/{len(tickers)}")
         if failed:
-            print(f"❌ Failed: {', '.join(failed)}")
+            print(f" Failed: {', '.join(failed)}")
         print(f"{'#'*70}\n")
         
         return results

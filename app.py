@@ -45,13 +45,13 @@ def load_lstm_model():
             # Import TensorFlow only when needed
             from tensorflow.keras.models import load_model
             model = load_model(MODEL_PATH)
-            print(f"✓ Model loaded successfully from {MODEL_PATH}")
+            print(f" Model loaded successfully from {MODEL_PATH}")
         else:
-            print(f"⚠ Model file not found at {MODEL_PATH}")
+            print(f"Model file not found at {MODEL_PATH}")
             print(f"   Current directory: {os.getcwd()}")
             print(f"   Files in artifacts/: {os.listdir('artifacts/') if os.path.exists('artifacts/') else 'Directory not found'}")
     except Exception as e:
-        print(f"❌ Error loading model: {e}")
+        print(f" Error loading model: {e}")
         import traceback
         traceback.print_exc()
     
@@ -75,7 +75,7 @@ def get_stock_data(ticker):
         
         # Validate data
         if hist.empty or len(hist) < 2:
-            print(f"❌ No data found for {ticker}")
+            print(f"No data found for {ticker}")
             return jsonify({
                 'success': False,
                 'error': f'No data found for {ticker}. Please check the ticker symbol or try again later.'

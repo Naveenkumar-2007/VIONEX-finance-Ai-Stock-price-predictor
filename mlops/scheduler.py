@@ -38,10 +38,10 @@ class SchedulerService:
         self.training_count += 1
         
         print(f"\n{'#'*70}")
-        print(f"🚀 SCHEDULED TRAINING SESSION #{self.training_count}")
+        print(f"SCHEDULED TRAINING SESSION #{self.training_count}")
         print(f"{'#'*70}")
-        print(f"⏰ Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"📊 Stocks: {', '.join(self.stocks)}")
+        print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Stocks: {', '.join(self.stocks)}")
         print(f"{'#'*70}\n")
         
         start_time = time.time()
@@ -54,11 +54,11 @@ class SchedulerService:
         
         # Print summary
         print(f"\n{'#'*70}")
-        print(f"📊 SESSION #{self.training_count} SUMMARY")
+        print(f"SESSION #{self.training_count} SUMMARY")
         print(f"{'#'*70}")
-        print(f"✅ Successful: {len(results)}/{len(self.stocks)}")
-        print(f"⏱️  Duration: {elapsed_time/60:.2f} minutes")
-        print(f"⏰ Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Successful: {len(results)}/{len(self.stocks)}")
+        print(f"Duration: {elapsed_time/60:.2f} minutes")
+        print(f"Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"{'#'*70}\n")
     
     def start(self, interval_hours: int = 1):
@@ -68,27 +68,24 @@ class SchedulerService:
         Args:
             interval_hours: Training interval in hours (default: 1)
         """
-        print(f"\n{'='*70}")
-        print(f"🤖 VIONEX MLOps Scheduler Service")
-        print(f"{'='*70}")
-        print(f"📋 Configuration:")
-        print(f"   • Training Interval: Every {interval_hours} hour(s)")
-        print(f"   • Stocks: {', '.join(self.stocks)}")
-        print(f"   • Auto-restart: Enabled")
+        print(f"Configuration:")
+        print(f"Training Interval: Every {interval_hours} hour(s)")
+        print(f"Stocks: {', '.join(self.stocks)}")
+        print(f"Auto-restart: Enabled")
         print(f"{'='*70}\n")
         
         # Schedule training
         schedule.every(interval_hours).hours.do(self.train_all_stocks)
         
         # Run initial training immediately
-        print(f"🚀 Running initial training session...\n")
+        print(f"Running initial training session...\n")
         self.train_all_stocks()
         
         # Keep running
         self.is_running = True
-        print(f"\n✅ Scheduler is now running...")
-        print(f"💡 Next training: {schedule.jobs[0].next_run.strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"⚠️  Press Ctrl+C to stop\n")
+        print(f"\n Scheduler is now running...")
+        print(f" Next training: {schedule.jobs[0].next_run.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"  Press Ctrl+C to stop\n")
         
         try:
             while self.is_running:
@@ -99,11 +96,8 @@ class SchedulerService:
     
     def stop(self):
         """Stop the scheduler service"""
-        print(f"\n\n{'='*70}")
-        print(f"🛑 SCHEDULER STOPPED")
-        print(f"{'='*70}")
-        print(f"📊 Total training sessions completed: {self.training_count}")
-        print(f"⏰ Stopped at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Total training sessions completed: {self.training_count}")
+        print(f"Stopped at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"{'='*70}\n")
         
         self.is_running = False
